@@ -16,7 +16,7 @@ format:
     code-fold: true
     code-tools: true
     code-summary: "Show code"
-    theme: cosmo
+    theme: cosmo 
     fig-width: 8
     fig-height: 6
     fig-dpi: 300
@@ -562,21 +562,25 @@ resources_needed <- education_with_config_resources %>%
     # ECCE Resources
     ecce_tents = round(ecce_schools * damage_multiplier * get_resource_multiplier("Tent"), 0),
     ecce_solar_lamps = round(ecce_schools * damage_multiplier * get_resource_multiplier("Solar Lamp"), 0),
+    ecce_school_kit = round(ecce_schools * damage_multiplier * get_resource_multiplier("School Kit"), 0),
     
     # Primary Resources
     primary_tents = round(primary_schools * damage_multiplier * get_resource_multiplier("Tent"), 0),
     primary_solar_lamps = round(primary_schools * damage_multiplier * get_resource_multiplier("Solar Lamp"), 0),
+    primary_school_kit = round(primary_schools * damage_multiplier * get_resource_multiplier("School Kit"), 0),
     
     # Secondary Resources
     secondary_tents = round(secondary_schools * damage_multiplier * get_resource_multiplier("Tent"), 0),
     secondary_solar_lamps = round(secondary_schools * damage_multiplier * get_resource_multiplier("Solar Lamp"), 0),
+    secondary_school_kit = round(secondary_schools * damage_multiplier * get_resource_multiplier("School Kit"), 0),
     
     # Total Resources (sum across all education levels)
     total_tents = ecce_tents + primary_tents + secondary_tents,
-    total_solar_lamps = ecce_solar_lamps + primary_solar_lamps + secondary_solar_lamps
+    total_solar_lamps = ecce_solar_lamps + primary_solar_lamps + secondary_solar_lamps,
+    total_school_kit = ecce_school_kit + primary_school_kit + secondary_school_kit
   ) %>%
   ungroup() %>%
-  select(Region, contains("tents"), contains("solar_lamps"))
+  select(Region, contains("tents"), contains("solar_lamps"), contains("school_kit"))
 
 # Aggregate to province and national levels
 resources_needed_full <- compute_council_aggregates(resources_needed)
@@ -606,25 +610,29 @@ reactable(
     # ECCE columns
     ecce_tents = colDef(name = "Tents", format = colFormat(digits = 0)),
     ecce_solar_lamps = colDef(name = "Solar Lamps", format = colFormat(digits = 0)),
+    ecce_school_kit = colDef(name = "School Kit", format = colFormat(digits = 0)),
     
     # Primary columns  
     primary_tents = colDef(name = "Tents", format = colFormat(digits = 0)),
     primary_solar_lamps = colDef(name = "Solar Lamps", format = colFormat(digits = 0)),
+    primary_school_kit = colDef(name = "School Kit", format = colFormat(digits = 0)),
     
     # Secondary columns
     secondary_tents = colDef(name = "Tents", format = colFormat(digits = 0)),
     secondary_solar_lamps = colDef(name = "Solar Lamps", format = colFormat(digits = 0)),
+    secondary_school_kit = colDef(name = "School Kit", format = colFormat(digits = 0)),
     
     # Total columns
     total_tents = colDef(name = "Tents", format = colFormat(digits = 0)),
-    total_solar_lamps = colDef(name = "Solar Lamps", format = colFormat(digits = 0))
+    total_solar_lamps = colDef(name = "Solar Lamps", format = colFormat(digits = 0)),
+    total_school_kit = colDef(name = "School Kit", format = colFormat(digits = 0))
   ),
   columnGroups = list(
     colGroup(name = "Region", columns = c("Region")),
-    colGroup(name = "ECCE", columns = c("ecce_tents", "ecce_solar_lamps")),
-    colGroup(name = "Primary", columns = c("primary_tents", "primary_solar_lamps")),
-    colGroup(name = "Secondary", columns = c("secondary_tents", "secondary_solar_lamps")),
-    colGroup(name = "Totals", columns = c("total_tents", "total_solar_lamps"))
+    colGroup(name = "ECCE", columns = c("ecce_tents", "ecce_solar_lamps", "ecce_school_kit")),
+    colGroup(name = "Primary", columns = c("primary_tents", "primary_solar_lamps", "primary_school_kit")),
+    colGroup(name = "Secondary", columns = c("secondary_tents", "secondary_solar_lamps", "secondary_school_kit")),
+    colGroup(name = "Totals", columns = c("total_tents", "total_solar_lamps", "total_school_kit"))
   ),
   striped = TRUE,
   highlight = TRUE,
