@@ -6,6 +6,7 @@ include-after-body: "asset/footer.html"
 css: "asset/style.css"
 format:
   html:
+    page-layout: full
     template-partials: 
       - asset/title-block.html
     toc: true
@@ -2654,12 +2655,13 @@ resources_needed <- staple_damage %>%
     kumala_cuttings = round(total_households_affected * get_food_security_resource_multiplier("Kumala Cuttings", Region), 0),
     manioc_cuttings = round(total_households_affected * get_food_security_resource_multiplier("Manioc Cuttings", Region), 0),
     yam_cuttings = round(total_households_affected * get_food_security_resource_multiplier("Yam Cuttings", Region), 0),
-    # Water bottles and tinned fish (immediate response)
+    # Water bottles, tinned fish and rice (immediate response)
     water = ceiling(total_households_affected * get_food_security_resource_multiplier("Water", Region) * days_of_support),
-    tin_fish = round(total_households_affected * get_food_security_resource_multiplier("Tin Fish", Region) * days_of_support, 0)
+    tin_fish = round(total_households_affected * get_food_security_resource_multiplier("Tin Fish", Region) * days_of_support, 0),
+    rice = round(total_households_affected * get_food_security_resource_multiplier("Rice", Region) * days_of_support, 0)
   ) %>%
   ungroup() %>%
-  select(Region, num_households_affected, water, tin_fish, island_cabbage_cuttings, taro_seedlings, kumala_cuttings, manioc_cuttings, yam_cuttings)
+  select(Region, num_households_affected, water, tin_fish, rice, island_cabbage_cuttings, taro_seedlings, kumala_cuttings, manioc_cuttings, yam_cuttings)
 
 # Aggregate to province and national levels
 resources_needed_full <- compute_council_aggregates(resources_needed)
@@ -2695,6 +2697,10 @@ reactable(
       name = "Tinned Fish (kg)", 
       format = colFormat(digits = 0)
     ),
+    rice = colDef(
+      name = "Rice (kg)", 
+      format = colFormat(digits = 0)
+    ),
     island_cabbage_cuttings = colDef(
       name = "Island Cabbage", 
       format = colFormat(digits = 0)
@@ -2719,7 +2725,7 @@ reactable(
   columnGroups = list(
     colGroup(name = "Region", columns = c("Region")),
     colGroup(name = "Affected Households", columns = c("num_households_affected")),
-    colGroup(name = "Immediate Response (Water & Food)", columns = c("water", "tin_fish")),
+    colGroup(name = "Immediate Response (Water & Food)", columns = c("water", "tin_fish", "rice")),
     colGroup(name = "Staple Crops Resources (Cuttings/Seedlings)", columns = c("island_cabbage_cuttings", "taro_seedlings", "kumala_cuttings", "manioc_cuttings", "yam_cuttings"))
   ),
   striped = TRUE,
@@ -3436,6 +3442,100 @@ reactable(
   columnGroups = list(
     colGroup(name = "Region", columns = c("Region")),
     colGroup(name = "Employment Status", columns = c("total_population", "employ_government", "employ_private", "employ_employer", "employ_self-employed", "employ_voluntary", "employ_unpaid", "employ_own consumption"))
+  ),
+  striped = TRUE,
+  highlight = TRUE,
+  bordered = TRUE,
+  theme = reactableTheme(
+    headerStyle = list(
+      "&:hover" = list(background = "#eee")
+    ),
+    borderColor = "#ddd",
+    stripedColor = "#f6f8fa"
+  ),
+  defaultPageSize = 15,
+  showPageSizeOptions = TRUE,
+  pageSizeOptions = c(10, 15, 25, 50, 75, 100),
+  showSortable = TRUE
+)
+```
+
+### Table 4: Functional Difficulties
+
+```{r}
+# === DATA WRANGLING ===
+# Get Functional Difficulties data (from 1c_input_baseline / 11b. Full Data Set.xlsx)
+functional_data <- full_data %>%
+  filter(Baseline == "Gender & Protection") %>%
+  filter(Year == max(Year, na.rm = TRUE)) %>%
+  filter(!is.na(`Area Council`)) %>%
+  filter(Indicator == "Functional Difficulties") %>%
+  mutate(Region = `Area Council`) %>%
+  select(Region, Attribute, Value)
+
+# Reshape: one column per difficulty type
+functional_wide <- functional_data %>%
+  mutate(difficulty_type = tolower(trimws(Attribute))) %>%
+  group_by(Region, difficulty_type) %>%
+  summarise(Value = sum(Value, na.rm = TRUE), .groups = "drop") %>%
+  pivot_wider(
+    names_from = difficulty_type,
+    values_from = Value,
+    names_prefix = "diff_"
+  ) %>%
+  mutate(across(where(is.numeric), ~replace_na(.x, 0)))
+
+# Add total across all difficulty types
+functional_wide <- functional_wide %>%
+  mutate(total = rowSums(across(starts_with("diff_")))) %>%
+  select(Region, total, everything())
+
+# Aggregate to province and national levels
+functional_aggregated <- compute_council_aggregates(functional_wide)
+
+# Reorder columns
+functional_ordered <- functional_aggregated %>%
+  select(
+    Region,
+    total,
+    diff_communication,
+    diff_hearing,
+    diff_remembering,
+    diff_seeing,
+    diff_selfcare,
+    diff_walking
+  )
+
+# === EXPORT TABLE 4 TO CSV ===
+write.csv(
+  functional_ordered,
+  here::here("output", "GenderProtection_01d_baseline_functional_difficulties.csv"),
+  row.names = FALSE
+)
+
+# === PRESENTATION TABLE 4 ===
+formatted4 <- format_table(functional_ordered)
+
+reactable(
+  formatted4,
+  columns = list(
+    Region = colDef(
+      name = "Region",
+      minWidth = 150,
+      sticky = "left",
+      html = TRUE
+    ),
+    total = colDef(name = "Total", format = colFormat(digits = 0)),
+    diff_communication = colDef(name = "Communication", format = colFormat(digits = 0)),
+    diff_hearing = colDef(name = "Hearing", format = colFormat(digits = 0)),
+    diff_remembering = colDef(name = "Remembering", format = colFormat(digits = 0)),
+    diff_seeing = colDef(name = "Seeing", format = colFormat(digits = 0)),
+    diff_selfcare = colDef(name = "Self-care", format = colFormat(digits = 0)),
+    diff_walking = colDef(name = "Walking", format = colFormat(digits = 0))
+  ),
+  columnGroups = list(
+    colGroup(name = "Region", columns = c("Region")),
+    colGroup(name = "Functional Difficulties", columns = c("total", "diff_communication", "diff_hearing", "diff_remembering", "diff_seeing", "diff_selfcare", "diff_walking"))
   ),
   striped = TRUE,
   highlight = TRUE,
