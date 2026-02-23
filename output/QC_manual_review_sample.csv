@@ -1,0 +1,14 @@
+"Sector","Region","ecce_schools","ecce_teachers","ecce_students","primary_schools","primary_teachers","primary_students","private_households_damaged","total_roof_damaged","roof_concrete_damaged","roof_metal_damaged","roof_wood_damaged","total_wall_damaged","wall_concrete_damaged","wall_metal_damaged","wall_wood_damaged","total_financial_damage","hospital_financial","health_centre_financial","dispensary_financial","aidpost_financial"
+"Education","West Vanualava",12,11,86,6,17,285,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Education","North East Malekula",36,24,306,16,51,1253,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Education","South West Malekula",22,19,184,12,30,554,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Education","Vermali",2,8,42,6,21,466,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Education","Aneityum",12,9,122,6,14,314,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"Shelter Damage","North East Malekula",NA,NA,NA,NA,NA,NA,153,45,7,36,2,60,50,7,3,NA,NA,NA,NA,NA
+"Shelter Damage","South West Malekula",NA,NA,NA,NA,NA,NA,93,36,2,34,0,34,22,5,7,NA,NA,NA,NA,NA
+"Shelter Damage","Vermali",NA,NA,NA,NA,NA,NA,432,328,6,245,77,321,182,110,29,NA,NA,NA,NA,NA
+"Shelter Damage","Aneityum",NA,NA,NA,NA,NA,NA,166,92,2,89,1,81,10,42,29,NA,NA,NA,NA,NA
+"Health Financial","North East Malekula",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,5300000,0,0,5e+05,4800000
+"Health Financial","South West Malekula",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,5300000,0,0,5e+05,4800000
+"Health Financial","Vermali",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,25200000,0,0,0,25200000
+"Health Financial","Aneityum",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,2500000,0,0,2500000,0
