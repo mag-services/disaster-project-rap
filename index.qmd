@@ -1,6 +1,5 @@
 ---
 title: "Disaster Damage and Response Estimation"
-author: "Théophile L. Mouton"
 date: "`r Sys.Date()`"
 include-after-body: "asset/footer.html"
 css: "asset/style.css"
@@ -24,7 +23,7 @@ format:
     self-contained: true
 execute:
   echo: true
-  warning: false
+  warning: true
   message: false
   error: false
 ---
@@ -37,21 +36,28 @@ This report runs based on a config file which provides the cyclone intensity app
 - Province
 - Area Council
 - Hazard
-- Intensity (number from 2 to 4)
+- Intensity (number from 2 to 5)
 
 Let's load this file to use it later in our analysis:
 
 ```{r}
-setwd("~/Documents/Work/Disaster Project/RAP/vanuatu")
-config <- read.csv("data/Ex_hazard_areas.csv")
-```
+# === REQUIRED FILE CHECK ===
+required_files <- c(
+  "data/Ex_hazard_areas.csv",
+  "data/council_province_lookup.csv",
+  "data/1c_input_baseline.csv",
+  "data/2a Input- Damage Multiplier.csv",
+  "data/3aii Input- Resources Sent.csv",
+  "data/4a Input- Finance Estimates.csv",
+  "data/GIS_layers/2016_phc_vut_acid_4326.geojson"
+)
+missing <- required_files[!file.exists(here::here(required_files))]
+if (length(missing) > 0) {
+  stop("Missing required files: ", paste(missing, collapse = ", "))
+}
 
-
-
-
-Another file that will be useful: a 2 columns dataframe that provides the list of councils with their Province
-```{r}
-council_province_lookup <- read.csv("data/council_province_lookup.csv")
+config <- read.csv(here::here("data", "Ex_hazard_areas.csv"))
+council_province_lookup <- read.csv(here::here("data", "council_province_lookup.csv"))
 ```
 
 
@@ -68,6 +74,11 @@ library(readxl)
 library(here)
 library(sf)
 library(leaflet)
+```
+
+```{r}
+# Load GIS layer once (used by all map chunks)
+councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
 ```
 
 
@@ -153,7 +164,7 @@ format_table <- function(data){
 
 Load and clean 'full data'
 ```{r}
-full_data <- read.csv("data/1c_input_baseline.csv")
+full_data <- read.csv(here::here("data", "1c_input_baseline.csv"))
 
 # Standardize Area Council names
 full_data <- full_data %>%
@@ -175,6 +186,24 @@ valid_councils <- region_order[!region_order %in% c("National", "Torba", "Sanma"
 
 full_data <- full_data %>%
   filter(`Area Council` %in% valid_councils)
+
+# Load configs once (used by Education, Telecom, Energy, Food Security, Shelter, WASH)
+baseline_factors <- read.csv(
+  here::here("data", "2a Input- Damage Multiplier.csv"),
+  check.names = FALSE
+)
+resource_config <- read.csv(
+  here::here("data", "3aii Input- Resources Sent.csv"),
+  check.names = FALSE
+)
+financial_config <- read.csv(
+  here::here("data", "4a Input- Finance Estimates.csv"),
+  check.names = FALSE
+)
+if ("" %in% names(financial_config)) {
+  financial_config <- financial_config %>% select(-1)
+}
+names(financial_config) <- trimws(names(financial_config))
 ```
 
 # Data Quality Checks
@@ -265,7 +294,7 @@ if (nrow(missing_optional) > 0) {
 
 # === 3. RANDOM SAMPLE FOR MANUAL REVIEW ===
 
-set.seed(as.numeric(Sys.Date())) # Reproducible daily sample
+set.seed(42)  # Fixed seed for reproducibility
 sample_councils <- sample(data_councils, min(5, length(data_councils)))
 
 message("📋 Manual review sample for ", Sys.Date(), ": ", paste(sample_councils, collapse = ", "))
@@ -403,13 +432,6 @@ reactable(
 education_with_config <- education_wide %>%
   left_join(config, by = c("Region" = "Area.Council"))
 
-# Load the baseline multiplying factors: 2a Input- Damage Multiplier (sheet 6)
-# Read CSV while preserving column names with spaces
-baseline_factors <- read.csv(
-  here::here("data", "2a Input- Damage Multiplier.csv"),
-  check.names = FALSE
-)
-
 # Helper function for damage multipliers (now considers council-specific values)
 get_damage_multiplier <- function(cyclone_category, education_level, measure_type, area_council) {
   intensity_col <- paste0("Intensity ", cyclone_category)
@@ -532,10 +554,6 @@ reactable(
 
 ```{r}
 # === DATA WRANGLING ===
-# Load the resource response configuration "3aii Input- Resources Sent" (sheet 10)
-
-resource_config <- read.csv(here::here("data", "3aii Input- Resources Sent.csv"), check.names = FALSE)
-
 # Helper function to get resource multipliers from config
 get_resource_multiplier <- function(resource_type) {
   multiplier <- resource_config %>%
@@ -660,21 +678,6 @@ reactable(
 ```{r}
 
 # === DATA WRANGLING ===
-# Load the financial damage estimation config (4a Input- Finance Estimates, sheet 13)
-# Read CSV while preserving column names with spaces
-financial_config <- read.csv(
-  here::here("data", "4a Input- Finance Estimates.csv"),
-  check.names = FALSE
-)
-
-# Remove empty column if exists
-if("" %in% names(financial_config)) {
-  financial_config <- financial_config %>% select(-1)
-}
-
-# Clean column names to remove any extra spaces
-names(financial_config) <- trimws(names(financial_config))
-
 # Helper function to get unit costs from config (now council-specific)
 get_unit_cost <- function(school_type, area_council) {
   unit_cost <- financial_config %>%
@@ -787,11 +790,6 @@ reactable(
 
 library(sf)
 library(leaflet)
-
-# Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
 
 # Prepare education financial data for mapping
 education_map_data <- financial_damage_full %>%
@@ -964,7 +962,7 @@ telecom_with_config <- telecom_wide %>%
   left_join(config, by = c("Region" = "Area.Council"))
 
 # Helper function for damage multipliers (council and provider-specific)
-get_damage_multiplier <- function(cyclone_category, provider, area_council) {
+get_telecom_damage_multiplier <- function(cyclone_category, provider, area_council) {
   intensity_col <- paste0("Intensity ", cyclone_category)
   
   multiplier <- baseline_factors %>%
@@ -992,10 +990,10 @@ damage_estimates <- telecom_with_config %>%
   rowwise() %>%
   mutate(
     # Digicel towers damaged
-    towers_digicel_damaged = towers_digicel * get_damage_multiplier(Intensity, "digicel", Region),
+    towers_digicel_damaged = towers_digicel * get_telecom_damage_multiplier(Intensity, "digicel", Region),
     
     # Vodafone towers damaged
-    towers_vodafone_damaged = towers_vodafone * get_damage_multiplier(Intensity, "vodafone", Region),
+    towers_vodafone_damaged = towers_vodafone * get_telecom_damage_multiplier(Intensity, "vodafone", Region),
     
     # Total towers damaged
     total_towers_damaged = towers_digicel_damaged + towers_vodafone_damaged
@@ -1070,11 +1068,6 @@ reactable(
 
 library(sf)
 library(leaflet)
-
-# Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
 
 # Prepare telecom damage data for mapping
 telecom_map_data <- damage_estimates_full %>%
@@ -1710,11 +1703,6 @@ reactable(
 #| code-fold: true
 #| code-summary: "Show map code"
 
-# Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare household electricity financial data for mapping
 household_elec_map_data <- household_elec_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -1909,10 +1897,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare infrastructure financial data for mapping
 infra_financial_map_data <- infrastructure_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -2870,10 +2854,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare staple crops financial data for mapping
 staple_financial_map_data <- staple_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -3065,10 +3045,6 @@ library(sf)
 library(leaflet)
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare cash crops financial data for mapping
 cash_financial_map_data <- cash_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -3665,10 +3641,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare gender & protection resources data for mapping
 gp_resources_map_data <- resources_needed_full %>%
   filter(!Region %in% c("National", provinces))
@@ -4256,10 +4228,6 @@ library(sf)
 library(leaflet)
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare health financial data for mapping
 health_financial_map_data <- health_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -5018,10 +4986,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare logistics infrastructure financial data for mapping
 logistics_infra_financial_map_data <- infrastructure_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -5208,10 +5172,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare road surface financial data for mapping
 road_financial_map_data <- road_financial_full %>%
   filter(!Region %in% c("National", provinces))
@@ -5387,12 +5347,6 @@ reactable(
 ```{r}
 # === DATA WRANGLING ===
 
-# Load damage multiplier configuration
-baseline_factors <- read.csv(
-  here::here("data", "2a Input- Damage Multiplier.csv"),
-  check.names = FALSE
-)
-
 # Filter for Shelter damage functions
 shelter_damage_functions <- baseline_factors %>%
   filter(Cluster == "Shelter")
@@ -5482,7 +5436,7 @@ shelter_damage_raw <- shelter_with_intensity %>%
 
 # Round for presentation
 shelter_damage_rounded <- shelter_damage_raw %>%
-  filter(Intensity > 0) %>%  
+  filter(!is.na(Intensity)) %>%  
   select(Region, ends_with("_damaged")) %>%
   mutate(across(where(is.numeric), ~round(.x, 0)))
 
@@ -5559,12 +5513,6 @@ reactable(
 ```{r}
 # === DATA WRANGLING ===
 
-# Load resources configuration
-resource_config <- read.csv(
-  here::here("data", "3aii Input- Resources Sent.csv"),
-  check.names = FALSE
-)
-
 # Filter for Shelter resources
 shelter_resources <- resource_config %>%
   filter(Cluster == "Shelter")
@@ -5583,7 +5531,7 @@ get_shelter_resource_quantity <- function(resource_type, area_council) {
 
 # Use the damaged households from previous section
 shelter_resources_calc <- shelter_damage_raw %>%
-  filter(Intensity > 0) %>%  # <-- ADD THIS LINE
+  filter(!is.na(Intensity)) %>%
   select(Region, private_households_damaged) %>%
   rowwise() %>%
   mutate(
@@ -5667,12 +5615,6 @@ reactable(
 ```{r}
 # === DATA WRANGLING ===
 
-# Load financial configuration
-financial_config <- read.csv(
-  here::here("data", "4a Input- Finance Estimates.csv"),
-  check.names = FALSE
-)
-
 # Filter for Shelter financial costs
 shelter_financial <- financial_config %>%
   filter(Cluster == "Shelter")
@@ -5715,7 +5657,7 @@ baseline_private_households <- full_data %>%
 
 # Use the raw damage estimates (before rounding) for financial calculations
 shelter_financial_calc <- shelter_damage_raw %>%
-  filter(Intensity > 0) %>%  # <-- ADD THIS LIN
+  filter(!is.na(Intensity)) %>%
   left_join(appliance_baseline, by = "Region") %>%
   left_join(baseline_private_households, by = "Region") %>%
   rowwise() %>%
@@ -5864,10 +5806,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare shelter financial data for mapping
 shelter_financial_map_data <- shelter_financial_ordered %>%
   filter(!Region %in% c("National", provinces))
@@ -6116,7 +6054,7 @@ wash_damage_raw <- wash_with_intensity %>%
 
 # Round for presentation
 wash_damage_rounded <- wash_damage_raw %>%
-  filter(Intensity > 0) %>%  # <-- ADD THIS LINE
+  filter(!is.na(Intensity)) %>%
   select(Region, ends_with("_damaged")) %>%
   mutate(across(where(is.numeric), ~round(.x, 0)))
 
@@ -6209,7 +6147,7 @@ get_wash_resource_quantity <- function(resource_type, area_council) {
 
 # Calculate resource needs based on damaged facilities
 wash_resources_calc <- wash_damage_raw %>%
-  filter(Intensity > 0) %>%  # <-- ADD THIS LINE
+  filter(!is.na(Intensity)) %>%
   select(Region, water_piped_damaged, water_well_damaged, water_tank_damaged,
          toilet_pit_latrine_damaged) %>%
   rowwise() %>%
@@ -6306,7 +6244,7 @@ get_wash_unit_cost <- function(indicator, attribute, area_council) {
 
 # Use the raw damage estimates (before rounding) for financial calculations
 wash_financial_calc <- wash_damage_raw %>%
-  filter(Intensity > 0) %>%  # <-- ADD THIS LINE
+  filter(!is.na(Intensity)) %>%
   rowwise() %>%
   mutate(
     # Financial damage for drinking water (in VT)
@@ -6420,10 +6358,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare WASH financial data for mapping
 wash_financial_map_data <- wash_financial_ordered %>%
   filter(!Region %in% c("National", provinces))
@@ -6601,10 +6535,6 @@ reactable(
 #| code-summary: "Show map code"
 
 # Load Area Council boundaries (if not already loaded)
-if (!exists("councils_sf")) {
-  councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
-}
-
 # Prepare business data for mapping
 business_map_data <- business_aggregated %>%
   filter(!Region %in% c("National", provinces))
@@ -6725,6 +6655,15 @@ output_files <- output_files[!grepl("^QC_", basename(output_files))]
 # Validate each
 validation_results <- lapply(output_files, validate_csv) %>% bind_rows()
 
+# Add Download column with link to each file
+validation_results <- validation_results %>%
+  mutate(
+    Download = sprintf(
+      '<a href="output/%s" download="%s" style="padding: 4px 12px; background: #0c55a4; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">Download</a>',
+      File, File
+    )
+  )
+
 # Determine overall pass/fail
 output_validation_pass <- all(validation_results$Pass)
 
@@ -6736,10 +6675,11 @@ if (output_validation_pass) {
 
 # Display detailed results
 reactable(
-  validation_results %>% select(File, Issue),
+  validation_results %>% select(File, Issue, Download),
   columns = list(
     File = colDef(name = "Output File", minWidth = 300),
-    Issue = colDef(name = "Status", minWidth = 150)
+    Issue = colDef(name = "Status", minWidth = 150),
+    Download = colDef(name = "Download", minWidth = 100, html = TRUE)
   ),
   striped = TRUE,
   bordered = TRUE,
@@ -6748,24 +6688,32 @@ reactable(
 
 # === MANUAL REVIEW SAMPLE EXPORT ===
 
-# Compile key metrics for sampled councils
-manual_review <- bind_rows(
-  education_aggregated %>% 
-    filter(Region %in% qc_sample_councils) %>% 
-    select(Region, starts_with("ecce_"), starts_with("primary_")) %>%
-    mutate(Sector = "Education", .before = 1),
-  
-  shelter_damage_ordered %>% 
+# Compile key metrics for sampled councils (with exists() checks in case a sector chunk failed)
+manual_review_parts <- list()
+if (exists("education_aggregated") && exists("qc_sample_councils")) {
+  manual_review_parts[[length(manual_review_parts) + 1]] <- education_aggregated %>%
     filter(Region %in% qc_sample_councils) %>%
-    mutate(Sector = "Shelter Damage", .before = 1),
-  
-  health_financial_ordered %>% 
+    select(Region, starts_with("ecce_"), starts_with("primary_")) %>%
+    mutate(Sector = "Education", .before = 1)
+}
+if (exists("shelter_damage_ordered") && exists("qc_sample_councils")) {
+  manual_review_parts[[length(manual_review_parts) + 1]] <- shelter_damage_ordered %>%
+    filter(Region %in% qc_sample_councils) %>%
+    mutate(Sector = "Shelter Damage", .before = 1)
+}
+if (exists("health_financial_ordered") && exists("qc_sample_councils")) {
+  manual_review_parts[[length(manual_review_parts) + 1]] <- health_financial_ordered %>%
     filter(Region %in% qc_sample_councils) %>%
     mutate(Sector = "Health Financial", .before = 1)
-)
+}
+manual_review <- if (length(manual_review_parts) > 0) bind_rows(manual_review_parts) else data.frame()
 
-write.csv(manual_review, here::here("output", "QC_manual_review_sample.csv"), row.names = FALSE)
-message("📁 Manual review sample exported to output/QC_manual_review_sample.csv")
+if (nrow(manual_review) > 0) {
+  write.csv(manual_review, here::here("output", "QC_manual_review_sample.csv"), row.names = FALSE)
+  message("📁 Manual review sample exported to output/QC_manual_review_sample.csv")
+} else {
+  message("⚠️ Manual review sample skipped (required sector data not available)")
+}
 
 # === QC SUMMARY TABLE ===
 
@@ -6793,5 +6741,19 @@ reactable(
   striped = TRUE,
   bordered = TRUE
 )
+
+# === CREATE ZIP OF ALL OUTPUT FILES ===
+output_zip <- here::here("vanuatu_outputs.zip")
+output_csvs <- list.files(here::here("output"), pattern = "\\.csv$", full.names = TRUE)
+if (length(output_csvs) > 0) {
+  if (file.exists(output_zip)) file.remove(output_zip)
+  zip(output_zip, files = output_csvs, extras = "-j")  # -j strips paths, stores flat
+}
 ```
+
+# 14. Download All Output
+
+All output CSV files (including QC files) have been bundled into a single zip archive. **Save `vanuatu_outputs.zip` alongside `index.html` when sharing** so the link works for recipients.
+
+<a href="vanuatu_outputs.zip" download="vanuatu_outputs.zip" style="display: inline-block; padding: 10px 20px; background-color: #0c55a4; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">⬇ Download all output (ZIP)</a>
 
