@@ -1,0 +1,10 @@
+/* Reduce font sizes so text fits on slides */
+.reveal {
+  font-size: 24px;
+}
+.reveal h1 { font-size: 1.5em; }
+.reveal h2 { font-size: 1.2em; }
+.reveal h3 { font-size: 1em; }
+.reveal p, .reveal li { font-size: 0.85em; }
+.reveal table { font-size: 0.7em; }
+.reveal .slides section { padding: 15px 35px; }

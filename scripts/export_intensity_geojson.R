@@ -28,16 +28,21 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 config <- read.csv(here::here("data", "Ex_hazard_areas.csv"))
 councils_sf <- st_read(here::here("data", "GIS_layers", "2016_phc_vut_acid_4326.geojson"), quiet = TRUE)
 
-# Prepare intensity data (one row per council)
+# Province from council_province_lookup (Council matches acname)
+council_province <- read.csv(here::here("data", "council_province_lookup.csv"))
+names(council_province) <- c("Province", "Council")
+
+# Intensity data (one row per council)
 intensity_data <- config %>%
   filter(!is.na(Area.Council), Area.Council != "") %>%
   select(Area.Council, Intensity) %>%
   distinct(Area.Council, .keep_all = TRUE)
 
-# Join councils with intensity; councils not in config get Intensity = 0
+# Join councils with intensity and province
 intensity_map_sf <- councils_sf %>%
   left_join(intensity_data, by = c("acname" = "Area.Council")) %>%
-  mutate(Intensity = replace_na(Intensity, 0))
+  mutate(Intensity = replace_na(Intensity, 0)) %>%
+  left_join(council_province, by = c("acname" = "Council"))
 
 # Add hex color for GIS styling (Cat 2–5: amber→orange→red→dark red; 0: grey)
 intensity_colors <- c(
@@ -49,6 +54,10 @@ intensity_colors <- c(
 )
 intensity_map_sf <- intensity_map_sf %>%
   mutate(intensity_color = intensity_colors[as.character(as.integer(Intensity))])
+
+# Simplify geometries for web display (reduces vertex count, prevents browser crash)
+# dTolerance in degrees: 0.01 ~ 1km. Aggressive for fast browser rendering.
+intensity_map_sf <- st_simplify(intensity_map_sf, dTolerance = 0.01, preserveTopology = TRUE)
 
 # Export GeoJSON
 geojson_path <- file.path(output_dir, "area_councils_intensity.geojson")

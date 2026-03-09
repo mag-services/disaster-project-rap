@@ -162,6 +162,14 @@ From the project root:
 quarto render index.qmd --to html
 ```
 
+### Render the presentation (slides)
+
+```bash
+quarto render presentation.qmd --to html
+```
+
+Produces `presentation.html` — a **self-contained** Reveal.js slide deck (single file, no external dependencies). Use for presenting; share `index.html` as PDF with attendees.
+
 Or in R:
 
 ```r

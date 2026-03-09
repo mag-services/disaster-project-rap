@@ -1,0 +1,238 @@
+---
+title: "Disaster Damage and Response Estimation"
+subtitle: "Vanuatu Rapid Assessment"
+author: "Government of Vanuatu"
+date: today
+embed-resources: true
+format:
+  revealjs:
+    theme: simple
+    css: asset/presentation.css
+    transition: slide
+    slide-number: true
+    incremental: false
+    width: 1280
+    height: 720
+---
+
+## DSSPAC Post Disaster Needs Assessment — Training
+
+**Context:** This presentation is part of the DSSPAC Post Disaster Needs Assessment (PDNA) training.
+
+**Aim:** To **entirely replace manual post disaster assessments** — which cost the Vanuatu Government so much money — with a rapid, data-driven approach.
+
+**RAP + MIS:** Automated damage, resource, and financial estimates that can be refined through field verification.
+
+---
+
+## What it is
+
+**Disaster Damage and Response Estimation** — Rapid assessment after a cyclone
+
+- **Damage** — Schools, health facilities, crops, roads, shelter, WASH
+- **Resources** — Tents, solar lamps, water, food, crop cuttings
+- **Financial impact** — Repair costs, crop loss valuation
+
+**Output:** Interactive HTML report, tables, maps, CSV exports
+
+::: {.notes}
+Full Disaster Damage and Response Estimation sample report shared via email.
+:::
+
+---
+
+## Why replace manual assessments?
+
+| Manual PDNA | RAP + MIS |
+|-------------|-----------|
+| **High cost** — Field teams, travel, per diem, logistics | **Low cost** — Run on existing data, update config from VMGD maps |
+| **Slow** — Days or weeks to mobilise and complete | **Fast** — Report in hours once intensity is assigned |
+| **Inconsistent** — Varies by team, timing, methodology | **Consistent** — Same formulas, auditable, repeatable |
+| **One-off** — Each disaster starts from scratch | **Improving** — Field checks feed back, multipliers refined |
+
+**Goal:** Reduce the financial burden on the Vanuatu Government while improving speed and consistency of post-disaster estimates.
+
+---
+
+## Technical: Cyclone Intensity
+
+**The engine:** `Ex_hazard_areas.csv` — one row per Area Council
+
+| Column | Role |
+|--------|------|
+| National | Country |
+| Province | Province name |
+| Area Council | Council name |
+| Hazard | e.g. Cyclone |
+| **Intensity** | **2–5** (category) |
+
+**Source:** VMGD cyclone track maps → overlay on Area Council boundaries
+
+- Near eye → Cat 4 or 5
+- Outer bands → Cat 2 or 3
+- Outside cone → 0
+
+**Same cyclone, different intensities per council** — e.g. Shefa Cat 4, Malampa Cat 2
+
+---
+
+## How it drives everything
+
+1. **Baseline** — Pre-disaster data from `1c_input_baseline.csv`
+2. **Damage** — `baseline × damage_multiplier(intensity, sector)`
+   - Multipliers are **council- and intensity-specific**
+3. **Resources** — Affected units × resource multipliers
+4. **Finance** — Damaged units × unit costs from config
+5. **Aggregation** — Council → Province → National
+
+---
+
+## Show & Go — 3 Clusters
+
+### Education
+- Baseline: Schools, students, teachers (ECCE, Primary, Secondary)
+- Damage: Damaged schools, students affected
+- Resources: Tents, lamps, school kits
+- Finance: Repair costs
+
+### Health
+- Baseline: Facilities, staff
+- Damage: Damaged facilities
+- Finance: Repair costs
+
+### Food Security
+- Baseline: Crops, households
+- Damage: Damaged crops
+- Resources: Cuttings, water, tinned fish, rice
+- Finance: Crop loss valuation
+
+---
+
+## Quality Checks
+
+| Check | Purpose |
+|-------|---------|
+| Area Councils recognized | No typos or unknown names |
+| No capitalization issues | Avoid duplicate councils |
+| Config–baseline alignment | Councils in hazard config have baseline data |
+| Required baseline completeness | Education, Energy, Food Security, etc. |
+| Intensity assignments valid | Range 2–5, complete for affected councils |
+| Output file validation | No negative values, NAs in exports |
+
+**QC outputs:** `QC_baseline_coverage.csv`, `QC_manual_review_sample.csv`
+
+---
+
+## Outputs
+
+### HTML report
+- Interactive tables (sortable, paginated)
+- Leaflet maps by sector
+- Intensity map (QC verification)
+
+### CSV exports (`output/`)
+
+| Prefix | Content |
+|--------|---------|
+| Education_* | Schools, damage, resources, finance |
+| Health_* | Facilities, damage, finance |
+| FoodSecurity_* | Crops, damage, resources, finance |
+| Health_*, Logistics_*, Shelter_*, WASH_*, Telecom_*, Energy_* | Sector-specific |
+| QC_* | Quality-control samples |
+
+### GeoJSON / Shapefile
+- `area_councils_intensity.geojson` — For GIS / MIS use
+
+### ZIP
+- `vanuatu_outputs.zip` — All CSV files for download
+
+---
+
+## Sectors covered
+
+| Sector | Baseline | Damage | Resources | Finance |
+|--------|----------|--------|-----------|---------|
+| Education | Schools, students | ✓ | ✓ | ✓ |
+| Health | Facilities, staff | ✓ | — | ✓ |
+| Food Security | Crops | ✓ | ✓ | ✓ |
+| Emergency Telecom | Towers | ✓ | — | ✓ |
+| Energy | Electricity, fuel | ✓ | ✓ | ✓ |
+| Shelter | Housing | ✓ | ✓ | ✓ |
+| WASH | Water, toilets | ✓ | ✓ | ✓ |
+| Logistics | Roads, infra | ✓ | ✓ | ✓ |
+| Gender & Protection | Population | — | ✓ | — |
+
+---
+
+## Customisation
+
+**Everything is customisable at the Vanuatu Bureau of Statistics:**
+
+- **Cyclone intensity** — Update `Ex_hazard_areas.csv` from VMGD maps (template provided)
+- **Baseline data** — `1c_input_baseline.csv`
+- **Damage multipliers** — By sector, intensity, council
+- **Resource and finance configs** — Quantities, unit costs
+- **Region order** — Council and province ordering in tables
+
+The MIS frontend layout and backend have already gone through many layout and feature changes — both systems evolve with use.
+
+---
+
+## Same philosophy as the MIS
+
+**Susie will present the MIS system next.**
+
+Both are designed for **in-country ownership**:
+
+- Vanuatu Bureau of Statistics can maintain and adapt inputs
+- No external support required once set up
+- Cyclone intensity from RAP → export script → loads into MIS
+- MIS frontend and backend have already gone through many layout and feature changes — everything is adaptable
+
+---
+
+## Summary
+
+**One config file** with cyclone intensity per council drives damage, resources, and finance across all sectors.
+
+**All inputs** are customisable by Vanuatu Bureau of Statistics — same as the MIS.
+
+**Aim:** Replace costly manual post disaster assessments with rapid, data-driven estimates — reducing the financial burden on the Vanuatu Government while improving speed and consistency for PDNA.
+
+---
+
+## Can we quantify building or garden damage?
+
+**Yes — all hazards can be quantified.** We just need the right tools and formulas.
+
+![Remove math from plane, leave only the pilot — even the pilot can be quantified (golden ratio). Same for building damage, crops, any hazard.](asset/plane-pilot-quantify.png){width=55%}
+
+*Analogy:* Remove math from a plane, leave only the naked pilot. Even the human pilot can be quantified — there is a golden ratio in it. So too with building damage, crop damage, or any hazard: the challenge is finding the right tools and formulas, not whether quantification is possible.
+
+---
+
+## MIS: Field checks & continuous improvement
+
+**The MIS adds another step: field verification.**
+
+![RAP → Field check → Feedback → VBoS adjusts → Machine learning process](asset/field-check-feedback-loop.png){width=55%}
+
+- Within the first 10 years of using RAP and MIS, **many field checks** will verify the RAP estimations
+- If estimates are wrong → **feedback** → VBoS adjusts multipliers and configs accordingly
+- It is a **machine learning process**: the system improves with each cycle
+
+---
+
+## Cyclone wind shelter effect: an island diagram
+
+![Cat 4 hits island, but geology/mountains shelter some areas — Cat 2 or 3 winds. Nuances captured over time.](asset/cyclone-geology-nuance.png){width=60%}
+
+**Example:** Category 4 may hit an island, but due to geology or mountains, some areas only face Category 2 or 3 winds. With time, all these nuances will be captured and refined within the MIS.
+
+---
+
+## Thank you
+
+Questions?
+
+*Full Disaster Damage and Response Estimation sample report shared via email*
