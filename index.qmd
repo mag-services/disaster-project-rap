@@ -6624,6 +6624,71 @@ This interactive map displays the number of businesses by Area Council. **Hover 
 ```{r}
 #| label: output-quality-checks
 
+# === INTENSITY VALIDATION ===
+# Check that hazard config has valid intensity assignments per council
+config_councils_with_intensity <- config %>%
+  filter(!is.na(Intensity), Intensity > 0) %>%
+  pull(Area.Council) %>% unique()
+councils_missing_intensity <- setdiff(valid_councils, config_councils_with_intensity)
+intensity_out_of_range <- config %>%
+  filter(!is.na(Intensity), (Intensity < 2 | Intensity > 5)) %>%
+  nrow()
+intensity_validation_pass <- intensity_out_of_range == 0  # Missing councils get 0 damage (OK)
+if (!intensity_validation_pass) {
+  if (length(councils_missing_intensity) > 0) {
+    message("⚠️ Councils with baseline data but no intensity in config (will show 0 damage): ", paste(head(councils_missing_intensity, 10), collapse = ", "), if (length(councils_missing_intensity) > 10) paste0(" ... (+", length(councils_missing_intensity) - 10, " more)") else "")
+  }
+  if (intensity_out_of_range > 0) {
+    warning("⚠️ Some intensity values are outside valid range (2–5)")
+  }
+}
+
+# === QC MAP: ASSIGNED INTENSITIES BY COUNCIL ===
+intensity_map_data <- config %>%
+  filter(!is.na(Area.Council), Area.Council != "") %>%
+  select(Area.Council, Intensity) %>%
+  distinct(Area.Council, .keep_all = TRUE)
+intensity_map_sf <- councils_sf %>%
+  left_join(intensity_map_data, by = c("acname" = "Area.Council")) %>%
+  mutate(Intensity = replace_na(Intensity, 0))
+pal_intensity <- colorNumeric(
+  palette = "YlOrRd",
+  domain = c(0, 5),
+  na.color = "#cccccc"
+)
+leaflet(intensity_map_sf) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(
+    fillColor = ~pal_intensity(Intensity),
+    fillOpacity = 0.7,
+    color = "#333333",
+    weight = 1,
+    highlightOptions = highlightOptions(
+      weight = 2,
+      color = "#000000",
+      fillOpacity = 0.9,
+      bringToFront = TRUE
+    ),
+    label = ~paste0(
+      "<strong>", acname, "</strong><br>",
+      "<strong>Intensity:</strong> ", ifelse(is.na(Intensity), "Not set", Intensity), " (", ifelse(Intensity == 0, "No damage", paste0("Category ", Intensity)), ")"
+    ) %>% lapply(htmltools::HTML),
+    labelOptions = labelOptions(style = list("font-weight" = "normal", padding = "8px 12px"), textsize = "12px", direction = "auto")
+  ) %>%
+  addLegend(
+    position = "bottomright",
+    pal = pal_intensity,
+    values = ~Intensity,
+    title = "Cyclone<br>Intensity",
+    opacity = 0.7,
+    labFormat = labelFormat(digits = 0)
+  ) %>%
+  setView(lng = 167.5, lat = -16, zoom = 6)
+```
+
+**Map above:** Assigned cyclone intensity per Area Council. Use this to verify your manual overlay matches expectations. Councils in grey have no intensity assigned.
+
+```{r}
 # === VALIDATE EXPORTED CSV FILES ===
 
 validate_csv <- function(filepath) {
@@ -6722,12 +6787,14 @@ qc_summary <- data.frame(
             "No capitalization issues",
             "Config-baseline alignment",
             "Required baseline completeness",
+            "Intensity assignments valid",
             "Output file validation"),
   Status = c(
     ifelse(length(unrecognized) == 0, "✓ Pass", "⚠️ Issues"),
     ifelse(length(potential_dupes) == 0, "✓ Pass", "⚠️ Issues"),
     ifelse(length(missing_baseline) == 0, "✓ Pass", "⚠️ Issues"),
     ifelse(baseline_completeness_pass, "✓ Pass", "⚠️ Issues"),
+    ifelse(intensity_validation_pass, "✓ Pass", "⚠️ Issues"),
     ifelse(output_validation_pass, "✓ Pass", "⚠️ Issues")
   )
 )

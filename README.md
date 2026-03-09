@@ -62,6 +62,7 @@ vanuatu/
 │   ├── 3aii Input- Resources Sent.csv     # Resource multipliers by council
 │   ├── 4a Input- Finance Estimates.csv    # Unit costs for damage valuation
 │   ├── Ex_hazard_areas.csv                 # Cyclone intensity per council
+│   ├── Ex_hazard_areas_template.csv        # Template (all councils, Intensity=0)
 │   ├── council_province_lookup.csv         # Council–Province mapping
 │   └── GIS_layers/
 │       └── 2016_phc_vut_acid_4326.geojson # Area Council boundaries
@@ -69,6 +70,34 @@ vanuatu/
 ├── index_files/           # Quarto-generated assets (do not edit)
 └── admin/                # Supporting documents
 ```
+
+---
+
+## Data Preparation: Updating Cyclone Intensity from VMGD Maps
+
+Before running the report, cyclone intensity must be assigned to each Area Council based on VMGD (Vanuatu Meteorology and Geo-Hazards Department) cyclone track maps.
+
+### Workflow
+
+1. **Obtain VMGD cyclone track map** — Similar to the Australian Bureau of Meteorology format: path with timestamps, intensity categories (2–5) at each point, and cone of uncertainty.
+2. **Overlay with Vanuatu Area Council map** — Use the boundary file `data/GIS_layers/2016_phc_vut_acid_4326.geojson` or equivalent.
+3. **Assign intensity per council** — Based on where the cyclone passed:
+   - Councils near the **eye** → Category 4 or 5
+   - Councils in **outer bands** → Category 2 or 3
+   - Councils **outside the cone** → 0 (no damage) or omit
+4. **Update `Ex_hazard_areas.csv`** — One row per Area Council with columns: National, Province, Area Council, Hazard, Intensity.
+5. **Run the report** — `quarto render index.qmd --to html`
+
+### Checklist
+
+- [ ] All affected councils have an Intensity value (2–5)
+- [ ] Councils outside the impact zone have Intensity = 0 or are excluded
+- [ ] Area Council names match `council_province_lookup.csv` (check spelling/capitalisation)
+- [ ] Same cyclone can have different intensities per council (e.g. Cat 4 in one, Cat 2 in another)
+
+### Template
+
+Use `data/Ex_hazard_areas_template.csv` as a starting point — it lists all councils with Intensity = 0. Copy to `Ex_hazard_areas.csv` and update only the affected councils.
 
 ---
 
@@ -131,7 +160,7 @@ quarto::quarto_render("index.qmd")
 
 ### Working directory
 
-The report sets `setwd()` in the first chunk. Ensure your working directory is the project root, or edit the path in `index.qmd` (lines 44–45) to match your setup. The `here` package is used elsewhere for path resolution.
+Run from the project root. The `here` package resolves all paths relative to the project directory.
 
 ---
 
