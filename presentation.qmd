@@ -23,6 +23,10 @@ format:
 
 **RAP + MIS:** Automated damage, resource, and financial estimates that can be refined through field verification.
 
+::: {.notes}
+Welcome everyone. We're here for the DSSPAC Post Disaster Needs Assessment training. The big aim is to stop doing manual assessments — they cost the government a lot of money. Instead we use RAP and MIS: you get damage and resource estimates quickly, then check them in the field and improve over time.
+:::
+
 ---
 
 ## What it is
@@ -36,7 +40,7 @@ format:
 **Output:** Interactive HTML report, tables, maps, CSV exports
 
 ::: {.notes}
-Full Disaster Damage and Response Estimation sample report shared via email.
+So what is RAP? After a cyclone, it gives you damage numbers — schools, health, crops, roads, shelter, water. It tells you what resources you need — tents, lamps, food. And it puts a dollar figure on the damage. You get an HTML report with tables and maps, plus CSV files you can use elsewhere. A full sample report will be shared by email.
 :::
 
 ---
@@ -46,11 +50,15 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 | Manual PDNA | RAP + MIS |
 |-------------|-----------|
 | **High cost** — Field teams, travel, per diem, logistics | **Low cost** — Run on existing data, update config from VMGD maps |
-| **Slow** — Days or weeks to mobilise and complete | **Fast** — Report in hours once intensity is assigned |
+| **Slow** — Days or weeks to mobilise and complete | **Fast** — Report in minutes once intensity is assigned |
 | **Inconsistent** — Varies by team, timing, methodology | **Consistent** — Same formulas, auditable, repeatable |
 | **One-off** — Each disaster starts from scratch | **Improving** — Field checks feed back, multipliers refined |
 
 **Goal:** Reduce the financial burden on the Vanuatu Government while improving speed and consistency of post-disaster estimates.
+
+::: {.notes}
+Why switch? Manual assessments are expensive — you pay for field teams, travel, per diem. They take days or weeks. And each team might do things differently. With RAP, you run it on data you already have. Once you assign intensity from the VMGD map, you get a report in minutes. Same formulas every time. And when field teams check and find errors, we adjust the system. It gets better over time.
+:::
 
 ---
 
@@ -74,6 +82,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 
 **Same cyclone, different intensities per council** — e.g. Shefa Cat 4, Malampa Cat 2
 
+::: {.notes}
+The heart of the system is a simple config file. One row per Area Council. You get the cyclone track from VMGD, overlay it on the council map, and assign a number 2 to 5. Near the eye it's Cat 4 or 5. Further out, Cat 2 or 3. Outside the cone, zero. One cyclone can hit Shefa at Cat 4 and Malampa at Cat 2 — that's fine, we handle that.
+:::
+
 ---
 
 ## How it drives everything
@@ -84,6 +96,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 3. **Resources** — Affected units × resource multipliers
 4. **Finance** — Damaged units × unit costs from config
 5. **Aggregation** — Council → Province → National
+
+::: {.notes}
+How does it work? You start with baseline data — schools, health facilities, crops, whatever. You multiply by a damage factor that depends on intensity and council. That gives you damage. From damage you get resources needed. From damage you get financial cost. Then you add up council to province to national. All driven by that one intensity number per council.
+:::
 
 ---
 
@@ -106,6 +122,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 - Resources: Cuttings, water, tinned fish, rice
 - Finance: Crop loss valuation
 
+::: {.notes}
+Let me walk through three clusters. Education: we have schools, students, teachers. We estimate damaged schools and affected students. We say how many tents and lamps you need. We put a cost on repairs. Health: same idea — facilities, damage, repair cost. Food Security: crops, damage, then cuttings and water and rice for recovery, plus crop loss value. The full report has more sectors — we're just showing the pattern here.
+:::
+
 ---
 
 ## Quality Checks
@@ -120,6 +140,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 | Output file validation | No negative values, NAs in exports |
 
 **QC outputs:** `QC_baseline_coverage.csv`, `QC_manual_review_sample.csv`
+
+::: {.notes}
+The report runs quality checks. Are council names right? No typos or duplicates? Does the hazard config match the baseline data? Do all councils have the required baselines? Is intensity in the right range? Do the output files look clean? We export QC files so you can spot issues before you use the numbers.
+:::
 
 ---
 
@@ -146,6 +170,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 ### ZIP
 - `vanuatu_outputs.zip` — All CSV files for download
 
+::: {.notes}
+What do you get? An HTML report with interactive tables and maps. CSV files for each sector — education, health, food, and so on. A GeoJSON and shapefile of intensity by council for GIS or the MIS. And a zip of all CSVs for easy sharing. You can open the HTML in a browser, no special software needed.
+:::
+
 ---
 
 ## Sectors covered
@@ -162,6 +190,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 | Logistics | Roads, infra | ✓ | ✓ | ✓ |
 | Gender & Protection | Population | — | ✓ | — |
 
+::: {.notes}
+We cover nine sectors. Education, Health, Food Security, Telecom, Energy, Shelter, WASH, Logistics, and Gender and Protection. Each has baseline, damage, resources, or finance depending on the sector. The table shows what's in the report for each.
+:::
+
 ---
 
 ## Customisation
@@ -176,6 +208,10 @@ Full Disaster Damage and Response Estimation sample report shared via email.
 
 The MIS frontend layout and backend have already gone through many layout and feature changes — both systems evolve with use.
 
+::: {.notes}
+Everything is in your hands. VBoS can change cyclone intensity, baseline data, damage multipliers, resource and finance configs, even the order of councils in tables. The MIS has already had lots of layout and feature changes — frontend and backend. Both systems are built to evolve.
+:::
+
 ---
 
 ## Same philosophy as the MIS
@@ -189,6 +225,10 @@ Both are designed for **in-country ownership**:
 - Cyclone intensity from RAP → export script → loads into MIS
 - MIS frontend and backend have already gone through many layout and feature changes — everything is adaptable
 
+::: {.notes}
+Susie will show the MIS next. Same idea: VBoS owns it. No external support needed. You run RAP, export the intensity, load it into the MIS. The MIS has already had many changes — layout, features. Everything can be adapted as you learn what works.
+:::
+
 ---
 
 ## Summary
@@ -199,6 +239,10 @@ Both are designed for **in-country ownership**:
 
 **Aim:** Replace costly manual post disaster assessments with rapid, data-driven estimates — reducing the financial burden on the Vanuatu Government while improving speed and consistency for PDNA.
 
+::: {.notes}
+So to sum up: one config file with intensity per council drives everything. All inputs are customisable by VBoS. The aim is to replace costly manual assessments with fast, consistent estimates — less cost for government, better for PDNA.
+:::
+
 ---
 
 ## Can we quantify building or garden damage?
@@ -208,6 +252,10 @@ Both are designed for **in-country ownership**:
 ![Remove math from plane, leave only the pilot — even the pilot can be quantified (golden ratio). Same for building damage, crops, any hazard.](asset/plane-pilot-quantify.png){width=55%}
 
 *Analogy:* Remove math from a plane, leave only the naked pilot. Even the human pilot can be quantified — there is a golden ratio in it. So too with building damage, crop damage, or any hazard: the challenge is finding the right tools and formulas, not whether quantification is possible.
+
+::: {.notes}
+Someone might ask: can we really put numbers on building damage or garden damage? Yes. Everything can be quantified if you have the right tools. Think of a plane — take away the math, you still have the pilot. Even the pilot has a golden ratio. Same for damage. The question isn't "can we" — it's "what tools and formulas do we need." We're building those.
+:::
 
 ---
 
@@ -221,6 +269,10 @@ Both are designed for **in-country ownership**:
 - If estimates are wrong → **feedback** → VBoS adjusts multipliers and configs accordingly
 - It is a **machine learning process**: the system improves with each cycle
 
+::: {.notes}
+The MIS adds field checks. In the first 10 years you'll do lots of them. If the RAP estimate is wrong, you feed that back. VBoS adjusts the multipliers. The system learns. It's like machine learning — each cycle makes it better.
+:::
+
 ---
 
 ## Cyclone wind shelter effect: an island diagram
@@ -229,6 +281,10 @@ Both are designed for **in-country ownership**:
 
 **Example:** Category 4 may hit an island, but due to geology or mountains, some areas only face Category 2 or 3 winds. With time, all these nuances will be captured and refined within the MIS.
 
+::: {.notes}
+Here's an example. Cat 4 hits an island. But mountains or geology shelter some areas — they only get Cat 2 or 3 winds. Right now we might assign one intensity per council. Over time, as field checks come in, we'll capture these nuances. The MIS will get more detailed. That's the improvement loop.
+:::
+
 ---
 
 ## Thank you
@@ -236,3 +292,7 @@ Both are designed for **in-country ownership**:
 Questions?
 
 *Full Disaster Damage and Response Estimation sample report shared via email*
+
+::: {.notes}
+Thanks everyone. Any questions? Remind them the full sample report will be shared by email. Hand over to Susie for the MIS if that's the plan.
+:::
