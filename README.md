@@ -99,6 +99,16 @@ Before running the report, cyclone intensity must be assigned to each Area Counc
 
 Use `data/Ex_hazard_areas_template.csv` as a starting point — it lists all councils with Intensity = 0. Copy to `Ex_hazard_areas.csv` and update only the affected councils.
 
+### Export to MIS
+
+To load cyclone intensity into the Disaster Project MIS:
+
+```bash
+Rscript scripts/export_hazard_for_mis.R --year 2025
+```
+
+This produces `data/Ex_hazard_areas_MIS_import.csv` in the format expected by the MIS Admin CSV import. See `disaster-project-mis/docs/rap_intensity_integration.md` for full integration steps.
+
 ---
 
 ## Input Data
