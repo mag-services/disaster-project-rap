@@ -6689,6 +6689,17 @@ leaflet(intensity_map_sf) %>%
 **Map above:** Assigned cyclone intensity per Area Council. Use this to verify your manual overlay matches expectations. Councils in grey have no intensity assigned.
 
 ```{r}
+# === EXPORT INTENSITY GEOJSON & SHAPEFILE ===
+# Area councils with Intensity and intensity_color for GIS / MIS use
+intensity_colors <- c("0" = "#cccccc", "2" = "#fbbf24", "3" = "#f97316", "4" = "#dc2626", "5" = "#7f1d1d")
+intensity_map_sf <- intensity_map_sf %>%
+  mutate(intensity_color = replace_na(intensity_colors[as.character(as.integer(Intensity))], "#cccccc"))
+dir.create(here::here("output"), showWarnings = FALSE, recursive = TRUE)
+st_write(intensity_map_sf, here::here("output", "area_councils_intensity.geojson"), delete_dsn = TRUE, quiet = TRUE)
+st_write(intensity_map_sf, here::here("output", "area_councils_intensity.shp"), delete_dsn = TRUE, quiet = TRUE)
+```
+
+```{r}
 # === VALIDATE EXPORTED CSV FILES ===
 
 validate_csv <- function(filepath) {
