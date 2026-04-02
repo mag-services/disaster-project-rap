@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DRMIS Field Checks — System Workflow &amp; Design</title>
+<style>
+  :root {
+    --blue: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #3b82f6;
+    --green: #16a34a; --green-light: #f0fdf4;
+    --amber: #d97706; --amber-light: #fffbeb;
+    --red: #dc2626; --red-light: #fef2f2;
+    --purple: #7c3aed; --purple-light: #f5f3ff;
+    --gray: #6b7280; --gray-light: #f9fafb; --gray-border: #e5e7eb;
+    --text: #111827; --text-muted: #6b7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; color: var(--text); line-height: 1.5; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+  h1 { font-size: 28px; font-weight: 800; color: var(--blue); margin-bottom: 4px; }
+  .subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 36px; }
+  h2 { font-size: 19px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+  .section { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-amber { background: var(--amber-light); color: var(--amber); }
+  .tag-red { background: var(--red-light); color: var(--red); }
+  .tag-purple { background: var(--purple-light); color: var(--purple); }
+
+  /* ── PIPELINE ── */
+  .pipeline { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding-bottom: 8px; }
+  .pipe-step { flex: 1; min-width: 150px; }
+  .pipe-box { background: var(--gray-light); border: 2px solid var(--gray-border); border-radius: 12px; padding: 14px; text-align: center; position: relative; }
+  .pipe-box.blue { background: var(--blue-light); border-color: var(--blue); }
+  .pipe-box.green { background: var(--green-light); border-color: var(--green); }
+  .pipe-box.amber { background: var(--amber-light); border-color: var(--amber); }
+  .pipe-box.purple { background: var(--purple-light); border-color: var(--purple); }
+  .pipe-icon { font-size: 24px; margin-bottom: 6px; }
+  .pipe-title { font-size: 13px; font-weight: 700; }
+  .pipe-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .pipe-arrow { display: flex; align-items: center; padding: 0 4px; padding-top: 24px; color: var(--gray); font-size: 20px; flex-shrink: 0; }
+
+  /* ── GRID ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+  /* ── CONFIDENCE TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--gray-light); padding: 10px 12px; text-align: left; font-weight: 700; border-bottom: 2px solid var(--gray-border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--gray-border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── MAPPING TABLE ── */
+  .map-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-border); font-size: 13px; }
+  .map-row:last-child { border-bottom: none; }
+  .map-from { flex: 2; }
+  .map-arrow { color: var(--gray); font-size: 18px; flex-shrink: 0; }
+  .map-to { flex: 2; }
+  .map-note { flex: 2; color: var(--text-muted); font-size: 12px; }
+
+  /* ── CODE BLOCK ── */
+  pre { background: #1e1e2e; color: #cdd6f4; border-radius: 10px; padding: 16px; font-size: 12px; overflow-x: auto; line-height: 1.6; }
+  code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+  .kw { color: #cba6f7; } .str { color: #a6e3a1; } .cm { color: #585b70; font-style: italic; }
+  .fn { color: #89b4fa; } .num { color: #fab387; }
+
+  /* ── IMPROVEMENT LOOP ── */
+  .loop { position: relative; }
+  .loop-items { display: flex; flex-direction: column; gap: 0; }
+  .loop-item { display: flex; gap: 16px; align-items: flex-start; padding: 16px 0; border-bottom: 1px solid var(--gray-border); }
+  .loop-item:last-child { border-bottom: none; }
+  .loop-num { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .loop-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .loop-content p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── CONFIDENCE CHART ── */
+  .chart-wrap { margin-top: 16px; }
+  .chart-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; }
+  .chart-label { width: 100px; text-align: right; color: var(--text-muted); }
+  .chart-track { flex: 1; background: var(--gray-border); border-radius: 4px; height: 20px; overflow: hidden; }
+  .chart-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-weight: 700; font-size: 11px; color: #fff; transition: width .6s ease; }
+  .chart-fill.model { background: #94a3b8; }
+  .chart-fill.verified { background: var(--green); }
+  .chart-fill.adjusted { background: var(--amber); }
+
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+  .endpoint { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .method { padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+  .method.post { background: #a6e3a1; color: #1a1a2e; }
+  .method.get { background: #89b4fa; color: #1a1a2e; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>DRMIS Field Checks — System Design</h1>
+  <p class="subtitle">End-to-end workflow: RAP → Mobile App → DRMIS → Multiplier Calibration → Improved RAP</p>
+
+  <!-- ── 1. PIPELINE ── -->
+  <div class="section">
+    <h2>🔄 End-to-End Workflow</h2>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-box blue">
+          <div class="pipe-icon">🌀</div>
+          <div class="pipe-title">Hazard Event</div>
+          <div class="pipe-sub">Cyclone, volcano, flood detected</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-box blue">
+          <div class="pipe-icon">📊</div>
+          <div class="pipe-title">RAP Run</div>
+          <div class="pipe-sub">Quarto model → estimated damage per council × sector</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-box amber">
+          <div class="pipe-icon">⬆️</div>
+          <div class="pipe-title">DRMIS Import</div>
+          <div class="pipe-sub">TabularItems created in DRMIS (confidence = model)</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-box green">
+          <div class="pipe-icon">📱</div>
+          <div class="pipe-title">Field Teams</div>
+          <div class="pipe-sub">Mobile app captures damage observations per asset</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-box green">
+          <div class="pipe-icon">🔁</div>
+          <div class="pipe-title">Sync</div>
+          <div class="pipe-sub">POST /api/v1/field-check/records/mobile/ → FieldCheckRecord</div>
+        </div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-box purple">
+          <div class="pipe-icon">📈</div>
+          <div class="pipe-title">Calibration</div>
+          <div class="pipe-sub">DRMIS dashboard → multiplier review → next RAP run</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. DATA MAPPING ── -->
+  <div class="section">
+    <h2>🔀 Mobile → DRMIS Data Mapping</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+      The mobile app captures rich per-asset observations. The sync endpoint maps these to
+      <strong>FieldCheckRecord</strong> entries on the relevant <strong>TabularItem</strong>
+      (aggregate RAP estimate for that council × sector).
+    </p>
+
+    <h3>Status Derivation</h3>
+    <table>
+      <thead><tr><th>Mobile: functionality</th><th>Avg damage %</th><th>DRMIS: status</th><th>observed_value</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag tag-green">usable</span></td><td>≤ 25%</td><td><span class="tag tag-green">verified</span> — RAP estimate is accurate</td><td>null</td></tr>
+        <tr><td><span class="tag tag-amber">partially_usable</span> <em>or</em> any damage 26–69%</td><td>26–69%</td><td><span class="tag tag-amber">adjusted</span> — damage higher than intact baseline</td><td>avg damage %</td></tr>
+        <tr><td><span class="tag tag-red">not_usable</span> <em>or</em> any damage ≥ 70%</td><td>≥ 70%</td><td><span class="tag tag-red">adjusted</span> — severe damage, major adjustment needed</td><td>avg damage %</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:20px;">Field Mapping</h3>
+    <div class="map-row"><div class="map-from"><strong>assetType</strong> <span class="tag tag-blue">education</span></div><div class="map-arrow">→</div><div class="map-to">TabularDataset.rap_sector_family = "education"</div><div class="map-note">Match by sector family on latest published RAP batch</div></div>
+    <div class="map-row"><div class="map-from"><strong>council</strong> "Port Vila"</div><div class="map-arrow">→</div><div class="map-to">AreaCouncil.name icontains match</div><div class="map-note">Case-insensitive match; multiple TabularItems possible</div></div>
+    <div class="map-row"><div class="map-from"><strong>roofDamage.percentage + wallDamage.percentage</strong></div><div class="map-arrow">→</div><div class="map-to">observed_value = average damage %</div><div class="map-note">Proxy for intensity; refine with real asset values later</div></div>
+    <div class="map-row"><div class="map-from"><strong>assessorName + assessorId</strong></div><div class="map-arrow">→</div><div class="map-to">verified_by = authenticated user</div><div class="map-note">Token maps to DRMIS user; assessor details in notes JSON</div></div>
+    <div class="map-row"><div class="map-from"><strong>All fields</strong></div><div class="map-arrow">→</div><div class="map-to">notes = structured JSON summary</div><div class="map-note">Full observation preserved for manual review</div></div>
+  </div>
+
+  <!-- ── 3. API ENDPOINT ── -->
+  <div class="section">
+    <h2>🔌 New API Endpoint</h2>
+    <div class="endpoint"><span class="method post">POST</span>/api/v1/field-check/records/mobile/</div>
+    <div class="endpoint"><span class="method get">GET</span>/api/v1/field-check/confidence-history/?event=&lt;slug&gt;</div>
+    <div class="endpoint"><span class="method get">GET</span>/api/v1/field-check/coverage/</div>
+
+    <h3 style="margin-top:20px;">Mobile Submit Payload</h3>
+    <pre><code><span class="cm">// POST /api/v1/field-check/records/mobile/</span>
+<span class="cm">// Auth: Authorization: Token &lt;api_token&gt;</span>
+{
+  <span class="str">"mobile_id"</span>: <span class="str">"fc-1748920012-abc123"</span>,
+  <span class="str">"asset_type"</span>: <span class="str">"education"</span>,
+  <span class="str">"asset_id"</span>: <span class="str">"SCH-001"</span>,
+  <span class="str">"asset_name"</span>: <span class="str">"Port Vila Primary School"</span>,
+  <span class="str">"province"</span>: <span class="str">"Shefa"</span>,
+  <span class="str">"council"</span>: <span class="str">"Port Vila"</span>,
+  <span class="str">"roof_damage_condition"</span>: <span class="str">"major"</span>,
+  <span class="str">"roof_damage_percentage"</span>: <span class="num">60</span>,
+  <span class="str">"wall_damage_condition"</span>: <span class="str">"minor"</span>,
+  <span class="str">"wall_damage_percentage"</span>: <span class="num">15</span>,
+  <span class="str">"functionality"</span>: <span class="str">"partially_usable"</span>,
+  <span class="str">"priority"</span>: <span class="str">"high"</span>,
+  <span class="str">"gps_latitude"</span>: <span class="num">-17.7333</span>,
+  <span class="str">"gps_longitude"</span>: <span class="num">168.3222</span>,
+  <span class="str">"assessor_name"</span>: <span class="str">"John Smith"</span>,
+  <span class="str">"assessor_id"</span>: <span class="str">"VAN-ASS-001"</span>,
+  <span class="str">"notes"</span>: <span class="str">"Roof badly damaged on eastern side..."</span>,
+  <span class="str">"observed_at"</span>: <span class="str">"2026-04-01T08:30:00Z"</span>
+}
+<span class="cm">// Response 201:</span>
+{
+  <span class="str">"mobile_id"</span>: <span class="str">"fc-1748920012-abc123"</span>,
+  <span class="str">"records_created"</span>: <span class="num">2</span>,
+  <span class="str">"items_matched"</span>: [
+    { <span class="str">"tabular_item_id"</span>: <span class="num">142</span>, <span class="str">"dataset"</span>: <span class="str">"Education Damage — Lola 2026"</span>, <span class="str">"status"</span>: <span class="str">"adjusted"</span> },
+    { <span class="str">"tabular_item_id"</span>: <span class="num">198</span>, <span class="str">"dataset"</span>: <span class="str">"Education Financial Damage — Lola 2026"</span>, <span class="str">"status"</span>: <span class="str">"adjusted"</span> }
+  ]
+}</code></pre>
+  </div>
+
+  <!-- ── 4. CONFIDENCE TRACKING ── -->
+  <div class="section">
+    <h2>📊 Confidence Tracking Over Time</h2>
+    <div class="grid2">
+      <div>
+        <h3>Confidence Levels (per item)</h3>
+        <table>
+          <thead><tr><th>Level</th><th>Meaning</th><th>Weight</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag" style="background:#f1f5f9;color:#64748b">model</span></td><td>RAP estimate only, not field-checked</td><td>0</td></tr>
+            <tr><td><span class="tag tag-green">field_verified</span></td><td>Field team confirmed RAP estimate is correct</td><td>100</td></tr>
+            <tr><td><span class="tag tag-amber">field_adjusted</span></td><td>Field team observed different value; RAP needs update</td><td>75</td></tr>
+            <tr><td><span class="tag tag-red">rejected</span></td><td>Estimate is invalid (asset doesn't exist / wrong location)</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:16px;font-size:13px;color:var(--text-muted)">
+          <strong>Coverage %</strong> = (verified + adjusted + rejected) / total items × 100<br>
+          <strong>Confidence %</strong> = (verified×100 + adjusted×75) / total × 100
+        </div>
+      </div>
+      <div>
+        <h3>Example — Cyclone Lola 2026 (Week 3)</h3>
+        <div class="chart-wrap">
+          <div class="chart-bar-row"><div class="chart-label">Model only</div><div class="chart-track"><div class="chart-fill model" style="width:45%">45%</div></div></div>
+          <div class="chart-bar-row"><div class="chart-label">Verified</div><div class="chart-track"><div class="chart-fill verified" style="width:32%">32%</div></div></div>
+          <div class="chart-bar-row"><div class="chart-label">Adjusted</div><div class="chart-track"><div class="chart-fill adjusted" style="width:23%">23%</div></div></div>
+        </div>
+        <div style="margin-top:12px;font-size:13px">
+          Coverage: <strong>55%</strong> &nbsp;|&nbsp; Confidence score: <strong>49/100</strong>
+        </div>
+        <div class="badge-row">
+          <span><span class="dot" style="background:#94a3b8"></span>New snapshot saved every 24h</span>
+          <span><span class="dot" style="background:var(--green)"></span>ConfidenceSnapshot model</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:24px;">ConfidenceSnapshot — New Model (DRMIS)</h3>
+    <pre><code><span class="kw">class</span> <span class="fn">ConfidenceSnapshot</span>(models.Model):
+    <span class="cm">"""Daily snapshot of field-check coverage per hazard event.
+    Enables time-series charts showing confidence improving over deployment."""</span>
+    event          = models.<span class="fn">ForeignKey</span>(CycloneEvent, on_delete=models.CASCADE)
+    snapshot_date  = models.<span class="fn">DateField</span>(auto_now_add=<span class="kw">True</span>, db_index=<span class="kw">True</span>)
+    total_items    = models.<span class="fn">PositiveIntegerField</span>()
+    model_count    = models.<span class="fn">PositiveIntegerField</span>()
+    verified_count = models.<span class="fn">PositiveIntegerField</span>()
+    adjusted_count = models.<span class="fn">PositiveIntegerField</span>()
+    rejected_count = models.<span class="fn">PositiveIntegerField</span>()
+    coverage_pct   = models.<span class="fn">FloatField</span>()   <span class="cm"># (v+a+r)/total</span>
+    confidence_pct = models.<span class="fn">FloatField</span>()   <span class="cm"># weighted score</span>
+
+    <span class="kw">class</span> Meta:
+        unique_together = [<span class="str">"event"</span>, <span class="str">"snapshot_date"</span>]
+        ordering = [<span class="str">"-snapshot_date"</span>]</code></pre>
+  </div>
+
+  <!-- ── 5. RAP IMPROVEMENT LOOP ── -->
+  <div class="section">
+    <h2>⚙️ How RAP Improves Over Time</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+      Field checks close the feedback loop between model-estimated damage and ground truth.
+      Over multiple events, systematic bias per sector or intensity zone can be corrected in the multiplier inputs.
+    </p>
+    <div class="loop-items">
+      <div class="loop-item">
+        <div class="loop-num" style="background:var(--blue-light);color:var(--blue)">1</div>
+        <div class="loop-content">
+          <h4>RAP runs → TabularItems created</h4>
+          <p>Quarto RAP model uses intensity × baseline × damage multiplier to estimate physical/financial damage per <strong>council × sector</strong>. These become <code>TabularItem</code> records in DRMIS with <span class="tag" style="background:#f1f5f9;color:#64748b;font-size:11px">confidence = model</span>.</p>
+        </div>
+      </div>
+      <div class="loop-item">
+        <div class="loop-num" style="background:var(--green-light);color:var(--green)">2</div>
+        <div class="loop-content">
+          <h4>Field teams deploy → mobile observations synced</h4>
+          <p>Assessors use the Android app to record roof/wall damage per asset. On sync, the app calls <strong>POST /api/v1/field-check/records/mobile/</strong>. The server matches observations to the relevant <code>TabularItem</code> by council × sector and creates <code>FieldCheckRecord</code> entries.</p>
+        </div>
+      </div>
+      <div class="loop-item">
+        <div class="loop-num" style="background:var(--amber-light);color:var(--amber)">3</div>
+        <div class="loop-content">
+          <h4>DRMIS shows discrepancies</h4>
+          <p>The DRMIS coverage dashboard shows which items are <span class="tag tag-amber" style="font-size:11px">adjusted</span> and the gap between RAP estimate and observed value. For example: RAP estimated 30% education damage in Port Vila, but field checks averaged 58%. This signals the education damage multiplier for Category 4 is too low.</p>
+        </div>
+      </div>
+      <div class="loop-item">
+        <div class="loop-num" style="background:var(--purple-light);color:var(--purple)">4</div>
+        <div class="loop-content">
+          <h4>VBoS analyst reviews and updates <code>2a Input- Damage Multiplier.csv</code></h4>
+          <p>Using the DRMIS adjustment data, the analyst updates the damage multiplier input file in the RAP repository. Specifically: <code>observed_value</code> from FieldCheckRecords (average over a council) ÷ intensity exposure factor = revised multiplier. A <strong>Multiplier Calibration Report</strong> can be generated automatically from the DRMIS API.</p>
+        </div>
+      </div>
+      <div class="loop-item">
+        <div class="loop-num" style="background:var(--blue-light);color:var(--blue)">5</div>
+        <div class="loop-content">
+          <h4>Next RAP run uses improved multipliers</h4>
+          <p>The updated <code>2a Input- Damage Multiplier.csv</code> feeds the next event's RAP run. Over time, as more events accumulate field check data, the multipliers converge toward real-world damage ratios. The DRMIS <strong>ConfidenceSnapshot</strong> time-series shows the coverage trajectory per event.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. MULTIPLIER CALIBRATION ── -->
+  <div class="section">
+    <h2>🧮 Multiplier Calibration Formula</h2>
+    <div class="grid2">
+      <div>
+        <h3>Current RAP Formula</h3>
+        <pre style="font-size:12px"><code>Estimated Damage =
+  baseline_asset_count
+  × intensity_multiplier[category]
+  × damage_multiplier[sector]
+  × replacement_cost_per_unit</code></pre>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:12px;">
+          <code>damage_multiplier</code> is the parameter field checks help calibrate.
+          It represents the fraction of assets that sustain damage at a given intensity.
+        </p>
+      </div>
+      <div>
+        <h3>Field-Derived Correction</h3>
+        <pre style="font-size:12px"><code><span class="cm"># For each council × sector with ≥ 3 adjusted checks:</span>
+field_avg_damage = mean(observed_value
+                       for FieldCheckRecord
+                       where status='adjusted')
+
+model_damage_pct = TabularItem.value /
+                   (baseline × replacement_cost)
+
+correction_factor = field_avg_damage / model_damage_pct
+
+new_multiplier = current_multiplier × correction_factor</code></pre>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:var(--amber-light);border-radius:8px;border-left:4px solid var(--amber)">
+      <strong style="font-size:13px">⚠️ Minimum sample size recommended: 3+ field checks per council × sector per intensity band</strong>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:4px">
+        Corrections based on fewer observations may reflect outliers rather than systematic bias.
+        The DRMIS calibration report should flag low-sample adjustments.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 7. WHAT TO BUILD NEXT ── -->
+  <div class="section">
+    <h2>🗺️ Implementation Roadmap</h2>
+    <div class="grid3">
+      <div>
+        <h3>Immediate (now)</h3>
+        <ul style="font-size:13px;padding-left:18px;line-height:2">
+          <li>✅ Mobile app (Expo RN)</li>
+          <li>🔧 <code>POST /mobile/</code> endpoint</li>
+          <li>🔧 Mobile sync service</li>
+          <li>🔧 Token auth in settings</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Short-term</h3>
+        <ul style="font-size:13px;padding-left:18px;line-height:2">
+          <li>📊 ConfidenceSnapshot + daily Celery task</li>
+          <li>📊 Confidence history chart in DRMIS</li>
+          <li>📋 Calibration report endpoint</li>
+          <li>📍 Map view of field checks in DRMIS</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Medium-term</h3>
+        <ul style="font-size:13px;padding-left:18px;line-height:2">
+          <li>📱 Browse RAP items in mobile app</li>
+          <li>🔄 Automated multiplier suggestions</li>
+          <li>📸 Photo upload to DRMIS</li>
+          <li>🔔 Alert when coverage &lt; threshold</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px">
+    DRMIS Field Checks — System Design Document · Generated April 2026 · VBoS / NDMO Vanuatu
+  </p>
+</div>
+</body>
+</html>

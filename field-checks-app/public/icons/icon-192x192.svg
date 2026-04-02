@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#3b82f6"/>
+  <rect x="16" y="16" width="160" height="160" fill="white" rx="8"/>
+  <rect x="32" y="32" width="128" height="128" fill="#3b82f6" rx="4"/>
+  <text x="96" y="104" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="white">DRMIS</text>
+  <text x="96" y="130" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="white">Field</text>
+  <text x="96" y="148" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="white">Checks</text>
+</svg>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="144" height="144" viewBox="0 0 144 144" xmlns="http://www.w3.org/2000/svg">
+  <rect width="144" height="144" fill="#3b82f6"/>
+  <rect x="12" y="12" width="120" height="120" fill="white" rx="6"/>
+  <rect x="24" y="24" width="96" height="96" fill="#3b82f6" rx="3"/>
+  <text x="72" y="76" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">DRMIS</text>
+  <text x="72" y="98" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">Field</text>
+</svg>
